@@ -11,7 +11,7 @@ import os
 # 1. Load wm-811k dataset
 # ------------------------------
 
-file_path = r"C:\Users\Phimprasert\Documents\GitHub\testwork\little_wafer\Kaggle_Dataset\LSWMD.pkl"
+file_path = r"C:\Users\User\Documents\GitHub\testwork\little_wafer\Kaggle_Dataset\LSWMD.pkl"
 with open(file_path, 'rb') as f:
     df = pd.read_pickle(f)
 print("Total wafers:", len(df))
@@ -109,7 +109,7 @@ def predict_folder(folder_path):
 # ------------------------------
 # ใช้งาน
 # ------------------------w------
-folder_path = r"C:\Users\Phimprasert\Documents\GitHub\testwork\little_wafer\PRR_to_PNG_and_Resize\Wafer-Map_resized"
+folder_path = r"C:\Users\User\Documents\GitHub\testwork\little_wafer\PRR_to_PNG_and_Resize\Wafer-Map_resized"
 predict_results = predict_folder(folder_path)
 
 df_results = pd.DataFrame(predict_results, columns=["filename", "predicted_label"])
