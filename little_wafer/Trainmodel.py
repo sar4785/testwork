@@ -28,6 +28,7 @@ def convert_failure_type(x):
         return str(x)
 
 df['failureType'] = df['failureType'].apply(convert_failure_type)
+df = df[df['failureType'] != "Unknown"].reset_index(drop=True)
 print("Unique labels:", df['failureType'].unique())
 
 # -----------------------------------
@@ -135,7 +136,8 @@ def df_to_numpy(df, y):
     imgs = []
     for i, row in df.iterrows():
         img = preprocess_wafer_map(row['waferMap'])
-        if img is not None:
+        if img is not None: #
+
             imgs.append(img)
     return np.array(imgs), y[:len(imgs)]
 
