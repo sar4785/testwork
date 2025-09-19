@@ -1,12 +1,13 @@
 # run.py
 import argparse
-import os
-from pathlib import Path
 
 def main():
     parser = argparse.ArgumentParser(description="Wafer Classification Pipeline")
     parser.add_argument('--step', type=str, required=True,
-                        choices=['extract', 'convert', 'plot', 'resize', 'train', 'all','prepare_kaggle','_npz'],
+                        choices=[
+                            'extract', 'convert', 'plot', 'resize',
+                            'train', 'all', 'prepare_kaggle', '_npz',
+                            'semi_supervised','auto_label',],
                         help='Pipeline step to run')
     parser.add_argument('--session', type=str, default=None,
                         help='Session filter for .std files (e.g., "S11P")')
@@ -27,29 +28,21 @@ def main():
         print("📈 Running: Plot PRR.csv to PNG...")
         PRRToPNGConverter.main()
 
-    elif args.step == 'resize':
-        from src.resize import resize_img #,convert_colors_to_grayscale
-        print("🖼️ Running: Resize PNG images...")
-        resize_img()
-        #convert_colors_to_grayscale()
-        
     elif args.step == 'prepare_kaggle':
         from src.kaggledata import KaggleDataProcessor
         print("🧩 Running: Prepare Kaggle dataset...")
         KaggleDataProcessor.run()
-    elif args.step == '_npz':    
+
+    elif args.step == '_npz':
         from src.kaggledata import KaggleDataProcessor
         print("🧩 Running: Prepare Kaggle dataset from NPZ...")
         KaggleDataProcessor.runnpz()
 
     elif args.step == 'train':
-        from src.train import TrainModel
+        from src.train import TrainModel, evaluate_model
         print("🧠 Running: Train model...")
         trainer = TrainModel()
         model, le, history, test_loader = trainer.run()
-        
-        # Evaluate the model on the test set
-        from src.train import evaluate_model  # สมมติว่า evaluate_model อยู่ในไฟล์ train.py
         evaluate_model(
             model=model,
             dataloader=test_loader,
@@ -58,8 +51,18 @@ def main():
             output_config=trainer.config['output']
         )
 
+    elif args.step == 'semi_supervised':
+        print("🧠 Running: Semi-supervised training...")
+        from src.semi_supervised import run_from_config
+        run_from_config("configs/config.yaml", epochs=5, threshold=0.9)
+    
+    elif args.step == 'auto_label':
+        from src.auto_label import auto_label
+        print("🤖 Running: Auto-labeling unlabeled images...")
+        auto_label(config_path="configs/config.yaml", threshold=0.9)
+
+
     elif args.step == 'all':
-        # รันทั้งหมดตามลำดับ
         from src.extract import ExtractZip
         from src.convert import PRRConverter
         from src.plot import PRRToPNGConverter

@@ -40,9 +40,13 @@ class TrainModel:
         Applies data augmentation and splits data into train/val/test sets.
         Returns DataLoaders for train and val, LabelEncoder, number of classes, and test DataLoader.
         """
-        data_dir = Path(self.config['data']['kaggle_png'])
-        if not data_dir.exists():
-            raise FileNotFoundError(f"Dataset directory not found: {data_dir}")
+        data_dirs = [
+            Path(self.config['data']['wafer_map_png']),
+            Path(self.config['data']['kaggle_png'])
+        ]
+        for d in data_dirs:
+            if not d.exists():
+                raise FileNotFoundError(f"Dataset directory not found: {d}")
 
         # Define data transformations with augmentations
         transform = transforms.Compose([
@@ -54,12 +58,20 @@ class TrainModel:
             transforms.RandomAffine(degrees=10, scale=(0.9, 1.1), translate=(0.1, 0.1))
         ])
 
-        # Load full dataset
-        full_dataset = ImageFolder(root=data_dir, transform=transform)
-        class_names = full_dataset.classes
+        # โหลด dataset จากแต่ละโฟลเดอร์
+        datasets = [ImageFolder(root=d, transform=transform) for d in data_dirs]
+        
+        # รวมเป็น dataset เดียว
+        from torch.utils.data import ConcatDataset
+        full_dataset = ConcatDataset(datasets)
+        
+        # class mapping ใช้อันแรก (ImageFolder จะใช้ชื่อโฟลเดอร์)
+        class_names = datasets[0].classes
         num_classes = len(class_names)
+        
 
         # Split dataset: 70% train, 15% val, 15% test
+        total_size = len(full_dataset)
         train_size = int(0.7 * len(full_dataset))
         val_size = int(0.15 * len(full_dataset))
         test_size = len(full_dataset) - train_size - val_size

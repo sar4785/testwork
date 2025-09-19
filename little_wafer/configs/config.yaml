@@ -10,6 +10,7 @@ data:
   zip: "./Data/Zipfile-STDF/"
   kaggle_png: "./Data/Kaggle_PNG/" 
   npz_dataset: "./Data/Wafer_Map_Datasets.npz" 
+  auto_labeled: "Data/AutoLabeled"
 
 output:
   checkpoints: "./Output/checkpoints/"

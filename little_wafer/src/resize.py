@@ -43,12 +43,12 @@ def resize_img(input_folder=None, output_folder=None, target_size=(224,224)):
     return resized_files
 
 
-#def convert_colors_to_grayscale(input_folder=None, output_folder=None, target_size=(224,224)):
+def convert_colors_to_grayscale(input_folder=None, output_folder=None, target_size=(224,224)):
     """
     Convert all wafer map images in input_folder to grayscale masks:
     - Green (0,255,0) -> 1 (gray)
     - Red   (255,0,0) -> 2 (white)
-    - Others          -> 0 (black)
+    - Others          -> 1 (gray)
     """
     if input_folder is None:
         input_folder = config['data']['wafer_map_png']  # ใช้ default จาก config
