@@ -11,12 +11,15 @@ dependencies = [
     "matplotlib (>=3.10.6,<4.0.0)",
     "pandas (>=2.3.2,<3.0.0)",
     "scikit-learn (>=1.7.1,<2.0.0)",
-    "numpy==1.26.4",
+    "numpy(>=1.25,<2.0)",
     "kagglehub (>=0.3.13,<0.4.0)",
-    "Semi_ATE (>=0.1.29,<0.2.0)"
+    "Semi_ATE (>=0.1.29,<0.2.0)",
+    tensorflow = ">=2.16.0,<3.0.0",
+    "typing-extensions (>=4.6,<5.0)"
 ]
 
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+

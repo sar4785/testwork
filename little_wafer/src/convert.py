@@ -13,8 +13,7 @@ CONFIG_PATH = 'configs/config.yaml'
 with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
     config = yaml.safe_load(f)
 
-class PRRConverter:
-    
+class PRRConverter: 
     @staticmethod
     def convert_stdf_to_prr(input_root=None, output_root=None, debug=False):
         """

@@ -1,12 +1,15 @@
 data:
-  raw: "./Data/" #for.npz,.pkl file
-  prr: "./Data/Output-PRR/" # ข้อมูล PRR 
+  raw: "./Data/" 
+  prr: "./Data/Output-PRR/"
   wafer_map_raw: "./Data/Wafer-Map/"
-  wafer_map_png: "./Data/WaferMap_PNG/"        # มีโฟลเดอร์ label ย่อยๆ
+  wafer_map_png: "./Data/WaferMap_PNG/"
   wafer_map_resized: "./Data/Wafer-Map_resized/"
-  real: "./Data/WaferMap_PNG/"
-  test: "./Output/" 
+  wafer_map_grayscale: "./Data/Wafer-Map_grayscale/"
+  real: "./Data/Wafer-Map_grayscale/"
+  test: "./Output/"
   zip: "./Data/Zipfile-STDF/"
+  kaggle_png: "./Data/Kaggle_PNG/" 
+  npz_dataset: "./Data/Wafer_Map_Datasets.npz" 
 
 output:
   checkpoints: "./Output/checkpoints/"
@@ -15,7 +18,7 @@ output:
 
 model:
   name: "EfficientNetB0"
-  epochs: 5
+  epochs: 1
   batch_size: 32
   freeze_backbone: true
 
