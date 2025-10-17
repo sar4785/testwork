@@ -3,27 +3,88 @@ data:
   prr: "./Data/Output-PRR/"
   wafer_map_raw: "./Data/Wafer-Map/"
   wafer_map_png: "./Data/WaferMap_PNG/"
-  wafer_map_resized: "./Data/Wafer-Map_resized/"
-  wafer_map_grayscale: "./Data/Wafer-Map_grayscale/"
-  real: "./Data/Wafer-Map_grayscale/"
-  test: "./Output/"
-  zip: "./Data/Zipfile-STDF/"
-  kaggle_png: "./Data/Kaggle_PNG/" 
-  npz_dataset: "./Data/Wafer_Map_Datasets.npz" 
-  auto_labeled: "Data/AutoLabeled"
+  real: "./Data/WaferMap_PNG/"
+  train: "./Data/train/"
+  val: "./Data/val_split/"
+  test: "./Data/test_split/"
+  npz_dataset: "./Data/Wafer_Map_Datasets.npz"
+  auto_labeled: "./Data/AutoLabeled"
+  augment_data: "./Data/Augmented_Real/"
+  kaggle_png: "./Data/train/" 
+  unlabeled_dataset: "./Data/unlabeled_dataset/"
+  synthetis: "./Data/Synthetis/"
+  allowed_classes: ["Center", "Donut", "Edge-Loc", "Edge-Ring", "Loc", "Random", "Scratch", "Near-full"]
 
 output:
   checkpoints: "./Output/checkpoints/"
   predictions: "./Output/predictions/"
   logs: "./Output/logs/"
 
+synthetic: "./Data/Synthetic"
+num_samples:
+  center: 20
+  donut: 30
+  near_full: 10
+  loc: 15
+center_radius: 5.0
+donut_inner_r: 30.0
+donut_outer_r: 60.0
+density: 1.0
+defect_fraction: 0.9
+loc_sigma: 5.0
+size: 1000
+radius_data: 20.0
+
 model:
-  name: "EfficientNetB0"
-  epochs: 1
-  batch_size: 32
-  freeze_backbone: true
+  device: "cuda"
+  seed: 42
+
+  resnet:
+    epochs: 5
+    batch_size: 32
+    learning_rate: 0.001
+    optimizer: "adam"
+    freeze_backbone: true
+    scheduler: "none"
+    step_size: 10
+    patience: 4
+    save_best_only: true
+
+  efficientnet:
+    epochs: 5
+    batch_size: 32
+    learning_rate: 0.000005
+    optimizer: "adamw"
+    freeze_backbone: true
+    scheduler: "cosine"
+    patience: 3
+    save_best_only: true
+
+  convnext:
+    epochs: 5
+    batch_size: 32
+    learning_rate: 0.00001
+    optimizer: "adamw"
+    freeze_backbone: false
+    scheduler: "cosine"
+    weight_decay: 0.01
+    patience: 3
+    save_best_only: true
+
+default:
+    epochs: 10
+    batch_size: 32
+    learning_rate: 0.0004
+    optimizer: "adam"
+    freeze_backbone: true
+    scheduler: "none"
+    patience: 3
 
 training:
-  train_subset: 2000
-  val_subset: 500
+  train_subset: null          
+  val_subset: null
   test_images_per_label: 100
+  early_stopping: true
+  patience: 3
+  save_best_only: true
+ 
