@@ -14,6 +14,7 @@ with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
     config = yaml.safe_load(f)
 
 class PRRConverter: 
+    
     @staticmethod
     def convert_stdf_to_prr(input_root=None, output_root=None, debug=False):
         """
@@ -23,7 +24,7 @@ class PRRConverter:
         :param debug: แสดง log เพิ่มเติม
         """
         if input_root is None:
-            input_root = config['data']['prr']  # ใช้ค่า default จาก config
+            input_root = config['data']['prr']  
         if output_root is None:
             output_root = config['data']['prr']
         os.makedirs(output_root, exist_ok=True)

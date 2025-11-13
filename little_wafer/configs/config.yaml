@@ -13,78 +13,68 @@ data:
   kaggle_png: "./Data/train/" 
   unlabeled_dataset: "./Data/unlabeled_dataset/"
   synthetis: "./Data/Synthetis/"
-  allowed_classes: ["Center", "Donut", "Edge-Loc", "Edge-Ring", "Loc", "Random", "Scratch", "Near-full"]
+  synthetis_clean: "./Data/Synthetis_clean/"
+  synthetic: "./Data/Synthetic"
+  allowed_classes: ["center", "donut", "edge_ring", "scratch", "near_full", "loc", "edge_loc", "random","none"]
 
 output:
   checkpoints: "./Output/checkpoints/"
   predictions: "./Output/predictions/"
   logs: "./Output/logs/"
 
-synthetic: "./Data/Synthetic"
-num_samples:
-  center: 20
-  donut: 30
-  near_full: 10
-  loc: 15
-center_radius: 5.0
-donut_inner_r: 30.0
-donut_outer_r: 60.0
-density: 1.0
-defect_fraction: 0.9
-loc_sigma: 5.0
-size: 1000
-radius_data: 20.0
-
 model:
   device: "cuda"
   seed: 42
 
+  model:
   resnet:
-    epochs: 5
+    epochs: 20
     batch_size: 32
-    learning_rate: 0.001
+    learning_rate: 0.0003
     optimizer: "adam"
-    freeze_backbone: true
-    scheduler: "none"
-    step_size: 10
-    patience: 4
+    freeze_backbone: false  # ✅ แก้
+    scheduler: "step"
+    step_size: 7
+    gamma: 0.1
+    patience: 5
     save_best_only: true
 
   efficientnet:
-    epochs: 5
+    epochs: 20
     batch_size: 32
-    learning_rate: 0.000005
+    learning_rate: 0.00005  # ✅ เพิ่มจาก 0.000005
     optimizer: "adamw"
-    freeze_backbone: true
+    weight_decay: 0.01      # ✅ เพิ่ม
+    freeze_backbone: false
     scheduler: "cosine"
-    patience: 3
+    patience: 4
     save_best_only: true
 
   convnext:
-    epochs: 5
+    epochs: 10
     batch_size: 32
-    learning_rate: 0.00001
+    learning_rate: 0.00005  # ✅ เพิ่มเล็กน้อย
     optimizer: "adamw"
     freeze_backbone: false
     scheduler: "cosine"
     weight_decay: 0.01
-    patience: 3
+    patience: 4
     save_best_only: true
 
-default:
+  vit:
     epochs: 10
     batch_size: 32
-    learning_rate: 0.0004
-    optimizer: "adam"
-    freeze_backbone: true
-    scheduler: "none"
-    patience: 3
+    learning_rate: 0.0001
+    optimizer: "adamw"
+    freeze_backbone: false  # ✅ แก้
+    scheduler: "cosine"
+    patience: 4
+    save_best_only: true
+    weight_decay: 0.01
 
 training:
-  train_subset: null          
-  val_subset: null
-  test_images_per_label: 100
+  warmup_epochs: 3       # ✅ เพิ่ม
+  gradient_clip: 1.0     # ✅ เพิ่ม
   early_stopping: true
-  patience: 3
+  patience: 5            # ✅ เพิ่มจาก 3
   save_best_only: true
- 

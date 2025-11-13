@@ -1,97 +1,76 @@
-import os
-import yaml
-from pathlib import Path
-from PIL import Image
+import cv2
 import numpy as np
+from pathlib import Path
+from tqdm import tqdm
+import yaml
+import os
 
-# Load config
-CONFIG_PATH = 'configs/config.yaml'
-with open(CONFIG_PATH, 'r', encoding='utf-8') as f:
-    config = yaml.safe_load(f)
+def load_config(config_path="configs/config.yaml"):
+    """โหลด config"""
+    with open(config_path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
 
-def resize_img(input_folder=None, output_folder=None, target_size=(224,224)):
-    """ Resize all images in the input folder to the target size. """
-    if input_folder is None:
-        input_folder = config['data']['wafer_map_png']  # ใช้ default จาก config
-    if output_folder is None:
-        output_folder = config['data']['wafer_map_resized']
-    # Create output folder if it doesn't exist
-    os.makedirs(output_folder, exist_ok=True)
+def apply_circular_mask(img):
+    """ล้างขอบภาพนอก wafer ให้เป็นสีดำ"""
+    h, w = img.shape[:2]
+    mask = np.zeros((h, w), dtype=np.uint8)
+    center = (w // 2, h // 2)
+    radius = min(center) - 2
+    cv2.circle(mask, center, radius, 255, -1)
+    masked = cv2.bitwise_and(img, mask)
+    return masked
 
-    supported_extensions = ('.png', '.jpg', '.jpeg')
-    resized_files = []
+def augment_image(img):
+    """สร้างภาพ augmented (flip, rotate, mask)"""
+    augmented = []
+    augmented.append(apply_circular_mask(img.copy()))  # Original (masked)
+    flip_lr = cv2.flip(img, 1)
+    augmented.append(apply_circular_mask(flip_lr))
+    flip_ud = cv2.flip(img, 0)
+    augmented.append(apply_circular_mask(flip_ud))
+    
+    h, w = img.shape[:2]
+    center = (w // 2, h // 2)
+    for angle in [15, -15]:
+        M = cv2.getRotationMatrix2D(center, angle, 1.0)
+        rotated = cv2.warpAffine(img, M, (w, h), flags=cv2.INTER_LINEAR,
+                                 borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+        rotated = apply_circular_mask(rotated)
+        augmented.append(rotated)
+    return augmented
 
-    for filename in os.listdir(input_folder):
-        if filename.lower().endswith(supported_extensions):
-            img_path = os.path.join(input_folder, filename)
-            try:
-                with Image.open(img_path) as img:
-                    # Convert to RGB if necessary
-                    if img.mode in ('RGBA', 'LA', 'P'):
-                        img = img.convert('RGB')
-                    # Resize
-                    img_resized = img.resize(target_size, Image.Resampling.LANCZOS)
-                    # Save
-                    output_path = os.path.join(output_folder, filename)
-                    img_resized.save(output_path)
-                    resized_files.append(output_path)
-                    print(f"Resized: {filename} -> {target_size}")
-            except Exception as e:
-                print(f"Error processing {filename}: {e}")
+def process_real_wafer_data_single_folder():
+    """ทำ Augment ภาพทั้งหมดในโฟลเดอร์เดียว"""
+    config = load_config()
+    input_dir = Path(config['data']['real'])
+    output_dir = Path(config['data']['augment_data'])
 
-    print(f"\nCompleted! Resized {len(resized_files)} images. Saved to: {output_folder}")
-    return resized_files
+    if not input_dir.exists():
+        raise FileNotFoundError(f"❌ Input folder not found: {input_dir}")
+    output_dir.mkdir(parents=True, exist_ok=True)
 
+    print(f"🔍 Reading wafer maps from: {input_dir}")
+    print(f"💾 Saving augmented images to: {output_dir}")
 
-def convert_colors_to_grayscale(input_folder=None, output_folder=None, target_size=(224,224)):
-    """
-    Convert all wafer map images in input_folder to grayscale masks:
-    - Green (0,255,0) -> 1 (gray)
-    - Red   (255,0,0) -> 2 (white)
-    - Others          -> 1 (gray)
-    """
-    if input_folder is None:
-        input_folder = config['data']['wafer_map_png']  # ใช้ default จาก config
-    if output_folder is None:
-        output_folder = config['data']['wafer_map_grayscale']
+    image_files = [f for f in input_dir.iterdir() if f.suffix.lower() in ['.png', '.jpg', '.jpeg']]
+    if not image_files:
+        print(f"⚠️ No images found in {input_dir}")
+        return
 
-    os.makedirs(output_folder, exist_ok=True)
-    supported_extensions = ('.png', '.jpg', '.jpeg')
-    grayscale_files = []
+    total_saved = 0
+    for count, img_file in enumerate(tqdm(image_files, desc="Augmenting images")):
+        img = cv2.imread(str(img_file), cv2.IMREAD_GRAYSCALE)
+        if img is None:
+            print(f"⚠️ Skipping invalid image: {img_file.name}")
+            continue
 
-    for filename in os.listdir(input_folder):
-        if filename.lower().endswith(supported_extensions):
-            img_path = os.path.join(input_folder, filename)
-            try:
-                with Image.open(img_path) as img:
-                    img = img.convert("RGB")
-                    arr = np.array(img)
+        augmented_images = augment_image(img)
+        for i, aug_img in enumerate(augmented_images):
+            filename = f"{img_file.stem}_aug{i}_{count:05d}.png"
+            save_path = output_dir / filename
+            cv2.imwrite(str(save_path), aug_img)
+            total_saved += 1
 
-                    # สร้าง mask
-                    mask = np.zeros(arr.shape[:2], dtype=np.uint8)
-
-                    # หา pixel ที่เป็นเขียวและแดง
-                    green_mask = (arr[:,:,0] == 0) & (arr[:,:,1] == 0) & (arr[:,:,2] == 255)
-                    red_mask   = (arr[:,:,0] == 255) & (arr[:,:,1] == 0) & (arr[:,:,2] == 0)
-
-                    mask[green_mask] = 1   # เทา
-                    mask[red_mask]   = 2   # ขาว
-
-                    # สเกลค่า (0=ดำ, 127=เทา, 254=ขาว)
-                    mask_img = Image.fromarray(mask * 127)
-
-                    # Resize (ถ้ามี target_size)
-                    if target_size:
-                        mask_img = mask_img.resize(target_size, Image.Resampling.NEAREST)
-
-                    # Save
-                    output_path = os.path.join(output_folder, filename)
-                    mask_img.save(output_path)
-                    grayscale_files.append(output_path)
-                    print(f"Converted: {filename} -> grayscale")
-
-            except Exception as e:
-                print(f"Error processing {filename}: {e}")
-
-    print(f"\nCompleted! Converted {len(grayscale_files)} images. Saved to: {output_folder}")
-    return grayscale_files
+    print(f"\n🎉 Augmentation completed!")
+    print(f"📸 Total augmented images saved: {total_saved}")
+    print(f"📁 Output path: {output_dir}")

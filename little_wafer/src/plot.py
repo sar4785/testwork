@@ -3,7 +3,7 @@ import pandas as pd
 import yaml
 import matplotlib.pyplot as plt
 from pathlib import Path
-from PIL import Image
+from PIL import Image,ImageDraw
 import numpy as np
 
 # Load config
@@ -30,7 +30,6 @@ class PRRToPNGConverter:
             return
 
         for csv_file in csv_files:
-            try:
                 # โหลดข้อมูล CSV
                 df = pd.read_csv(csv_file)
                 row_count = len(df)
@@ -55,31 +54,31 @@ class PRRToPNGConverter:
                 # Mapping ค่า bin → grayscale
                 for _, row in df.iterrows():
                     x, y, hb = int(row["X_COORD"] - min_x), int(row["Y_COORD"] - min_y), row["HARD_BIN"]
-                    if hb == 1:   # pass
-                        mask[y, x] = 1   # เทา
-                    else:         # fail
-                        mask[y, x] = 2   # ขาว
-                
-                # แปลงเป็น grayscale (0=ดำ, 127=เทา, 254=ขาว)
-                mask_img = Image.fromarray((mask * 127).astype(np.uint8), mode='L') 
-                # Resize → 224x224
-                mask_img = mask_img.resize(target_size, Image.Resampling.NEAREST)
-                
-                
-                """ # Plot pass dies (Hard_bin == 1)
-                pass_dies = df[df["HARD_BIN"] == 1]
-                ax.scatter(pass_dies["X_COORD"], pass_dies["Y_COORD"], c="green", marker="s", s=10)
+                    
+                    if hb == 1:  # pass
+                        mask[y, x] = 127  # เทาอ่อน
+                    else:
+                        mask[y, x] = 255  # ขาว (fail)
+                 
+                wafer_img = Image.fromarray(mask, mode="L")
+                wafer_img = wafer_img.resize(target_size, Image.Resampling.NEAREST)
+                plt.close('all')
 
-                # Plot fail dies (Hard_bin != 1)
-                fail_dies = df[df["HARD_BIN"] != 1]
-                ax.scatter(fail_dies["X_COORD"], fail_dies["Y_COORD"], c="red", marker="s", s=10) """
-                
-                plt.close(fig)
-                        
-                # Save ไฟล์
-                out_path = output_dir / f"{csv_file.stem}.png"
-                mask_img.save(out_path)
-                print(f"✅ Saved wafer map: {out_path}")
+                # สร้าง mask วงกลม (พื้นที่วงกลม = เทา, นอกวงกลม = ดำ)
+                circle_mask = Image.new("L", target_size, 0)
+                draw = ImageDraw.Draw(circle_mask)
+                cx, cy = target_size[0] // 2, target_size[1] // 2
+                radius = min(cx, cy) - 2
+                draw.ellipse(
+                            (cx - radius, cy - radius, cx + radius, cy + radius),
+                            fill=127  # พื้นที่ในวงกลมเป็นเทา
+                )
+                 
+                wafer_array = np.array(wafer_img)
+                circle_array = np.array(circle_mask) 
+                 
+                combined = np.where(circle_array > 0, np.maximum(wafer_array, circle_array), 0)
 
-            except Exception as e:
-                print(f"❌ Error processing {csv_file}: {e}")
+                final_img = Image.fromarray(combined.astype(np.uint8), mode="L")
+                final_img.save(outpath := output_dir / f"{csv_file.stem}.png")
+                print(f"✅ Saved wafer with circular mask: {outpath}")
