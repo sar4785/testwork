@@ -205,5 +205,10 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+<<<<<<< Updated upstream
 Wafer/archive (1).zip
 Wafer/archive (2).zip
+=======
+little_wafer/Kaggle_Dataset/LSWMD.pkl
+little_wafer/Kaggle_Dataset/Wafer_Map_Datasets.npz
+>>>>>>> Stashed changes
